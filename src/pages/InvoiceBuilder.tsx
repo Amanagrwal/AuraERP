@@ -38,6 +38,7 @@ import { number } from 'zod';
 import { invoiceSchema } from '@/components/Helper/invoiceSchema';
 import Button_loader from '@/components/Helper/Button_loader';
 import Custom_Loader from '@/components/Helper/Loader';
+import { ClientFormDialog } from '@/components/clients/ClientFormDialog';
 
 
 type ProductOption = {
@@ -128,6 +129,8 @@ export default function InvoiceBuilder() {
   const [items, setItems] = useState([createEmptyItem()]);
   const [applyRoundOff, setApplyRoundOff] = useState(true);
   const selectedClient = clients.find(c => c.id === selectedClientId);
+  const [clientDialogOpen, setClientDialogOpen] = useState(false);
+  const [clientDialogMode, setClientDialogMode] = useState<'create' | 'edit' | 'view'>('create');
 
   console.log("items", items)
 
@@ -251,6 +254,7 @@ export default function InvoiceBuilder() {
     };
   }, [items, applyRoundOff]);
 
+
   useEffect(() => {
     if (!invoiceData || !isEditMode) return;
 
@@ -360,6 +364,14 @@ export default function InvoiceBuilder() {
     [clients]
   );
 
+  const clientOptionsWithAdd = useMemo(() => {
+    return [
+      { value: 'new', label: '➕ Add New Client' } ,
+      ...clientOptions,
+    ];
+  }, [clientOptions]);
+
+
   const filterClientOption = (
     option: FilterOptionOption<ClientOption>,
     inputValue: string
@@ -371,7 +383,6 @@ export default function InvoiceBuilder() {
       option.data.mobile?.toLowerCase().includes(search)
     );
   };
-
 
   const filterProductOption = (
     option: FilterOptionOption<ProductOption>,
@@ -399,175 +410,175 @@ export default function InvoiceBuilder() {
   // }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/invoices')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            {/* <h1 className="font-display text-2xl font-bold">New Invoice</h1> */}
-            <h1 className="font-display text-2xl font-bold">
-              {isEditMode ? "Edit Invoice" : "New Invoice"}
-            </h1>
+    <>
 
-            {isEditMode && invoiceData?.invoice_no && (
-              <p className="text-sm text-muted-foreground">
-                Invoice No: <span className="font-mono">{invoiceData.invoice_no}</span>
-              </p>
-            )}
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/invoices')}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              {/* <h1 className="font-display text-2xl font-bold">New Invoice</h1> */}
+              <h1 className="font-display text-2xl font-bold">
+                {isEditMode ? "Edit Invoice" : "New Invoice"}
+              </h1>
 
-            <p className="text-muted-foreground">{currentCompany?.company_name}</p>
+              {isEditMode && invoiceData?.invoice_no && (
+                <p className="text-sm text-muted-foreground">
+                  Invoice No: <span className="font-mono">{invoiceData.invoice_no}</span>
+                </p>
+              )}
+
+              <p className="text-muted-foreground">{currentCompany?.company_name}</p>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* <Button variant="outline" onClick={() => handleSave(true)}>
+          <div className="flex items-center gap-2">
+            {/* <Button variant="outline" onClick={() => handleSave(true)}>
             <Save className="mr-2 h-4 w-4" />
             Save Draft
           </Button> */}
-          <Button
-            variant="accent"
-            onClick={() => handleSave(false)}
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending ? (
-              <>
-                <Button_loader /> Saving & Print...
-              </>
-            ) : (
-              <>
-                <Printer className="mr-2 h-4 w-4" />
-                Save & Print
-              </>
-            )}
-          </Button>
+            <Button
+              variant="accent"
+              onClick={() => handleSave(false)}
+              disabled={mutation.isPending}
+            >
+              {mutation.isPending ? (
+                <>
+                  <Button_loader /> Saving & Print...
+                </>
+              ) : (
+                <>
+                  <Printer className="mr-2 h-4 w-4" />
+                  Save & Print
+                </>
+              )}
+            </Button>
 
+          </div>
         </div>
-      </div>
 
-      {
-        isEditMode && invoiceLoading ? (
-          <>
-            <div className="flex h-[70vh] items-center justify-center">
-              <div className="flex flex-col items-center gap-3">
-                <Custom_Loader />
-                <p className="text-sm text-muted-foreground">
-                  Loading invoice details...
-                </p>
-              </div>
-            </div>
-
-          </>
-        ) : (
-          <>
-
-            <div className="grid gap-6 lg:grid-cols-3">
-              {/* Left Panel - Form */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Basic Info */}
-                <div className="rounded-xl border bg-card p-5 shadow-card">
-                  <h3 className="mb-4 font-display font-semibold">Invoice Details</h3>
-                  <div className="grid gap-4 sm:grid-cols-2">
-
-                    <div className="space-y-2">
-                      <Label>Client  </Label>
-                      <ReactSelect<ClientOption, false>
-                        isDisabled={isLoading}
-                        placeholder={isLoading ? "Loading clients..." : "Select Client"}
-                        options={clientOptions}
-                        value={
-                          clientOptions.find(
-                            (opt) => String(opt.value) === String(selectedClientId)
-                          ) || null
-                        }
-                        onChange={(option: SingleValue<ClientOption>) => {
-                          if (!option) return;
-                          setSelectedClientId(option.value);
-                        }}
-                        isSearchable
-                        filterOption={filterClientOption}
-                        menuPortalTarget={
-                          typeof window !== "undefined" ? document.body : undefined
-                        }
-                        styles={{
-                          control: (base) => ({
-                            ...base,
-                            minHeight: 36,
-                            fontSize: 14,
-                          }),
-                          menuPortal: (base) => ({
-                            ...base,
-                            zIndex: 9999,
-                          }),
-                        }}
-                        formatOptionLabel={(option) => (
-                          <div className="flex w-full items-center justify-between">
-                            <span>{option.label}</span>
-                            {option.mobile && (
-                              <span className="text-xs text-muted-foreground">
-                                {option.mobile}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      />
-
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Invoice Number</Label>
-                      <Input value={invoiceNo} readOnly className="bg-muted" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Date</Label>
-                      <Input
-                        type="date"
-                        value={invoiceDate}
-                        onChange={(e) => setInvoiceDate(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Sales Mode</Label>
-                      <Select value={salesMode} onValueChange={(v: 'GST' | 'Non-GST') => setSalesMode(v)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="GST">GST Invoice</SelectItem>
-                          <SelectItem value="Non-GST">Non-GST Invoice</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+        {
+          isEditMode && invoiceLoading ? (
+            <>
+              <div className="flex h-[70vh] items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                  <Custom_Loader />
+                  <p className="text-sm text-muted-foreground">
+                    Loading invoice details...
+                  </p>
                 </div>
+              </div>
 
-                {/* Items */}
-                <div className="rounded-xl border bg-card p-5 shadow-card">
-                  <div className="mb-4 flex items-center justify-between">
-                    <h3 className="font-display font-semibold">Items</h3>
-                    <Button variant="outline" size="sm" onClick={addItem}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Item
-                    </Button>
+            </>
+          ) : (
+            <>
+
+              <div className="grid gap-6 lg:grid-cols-3">
+                {/* Left Panel - Form */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Basic Info */}
+                  <div className="rounded-xl border bg-card p-5 shadow-card">
+                    <h3 className="mb-4 font-display font-semibold">Invoice Details</h3>
+                    <div className="grid gap-4 sm:grid-cols-2">
+
+                      <div className="space-y-2">
+                        <Label>Client  </Label>
+                        <ReactSelect<ClientOption, false>
+                          isDisabled={isLoading}
+                          placeholder={isLoading ? "Loading clients..." : "Select Client"}
+                          options={clientOptionsWithAdd}
+                          value={
+                            clientOptions.find(
+                              (opt) => String(opt.value) === String(selectedClientId)
+                            ) || null
+                          }
+                          onChange={(option: SingleValue<ClientOption>) => {
+                            if (!option) return;
+
+                            if (option.value === 'new') {
+                             
+                              setClientDialogMode('create');
+                              setClientDialogOpen(true);
+                              return;
+                            }
+
+                            setSelectedClientId(option.value);
+                          }}
+                          isSearchable
+                          filterOption={filterClientOption}
+                          menuPortalTarget={typeof window !== "undefined" ? document.body : undefined}
+                          styles={{
+                            control: (base) => ({ ...base, minHeight: 36, fontSize: 14 }),
+                            menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                          }}
+                          formatOptionLabel={(option) => (
+                            <div className="flex w-full items-center justify-between">
+                              <span>{option.label}</span>
+                              {option.mobile && option.value !== 'new' && (
+                                <span className="text-xs text-muted-foreground">{option.mobile}</span>
+                              )}
+                            </div>
+                          )}
+                        />
+
+
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Invoice Number</Label>
+                        <Input value={invoiceNo} readOnly className="bg-muted" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Date</Label>
+                        <Input
+                          type="date"
+                          value={invoiceDate}
+                          onChange={(e) => setInvoiceDate(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Sales Mode</Label>
+                        <Select value={salesMode} onValueChange={(v: 'GST' | 'Non-GST') => setSalesMode(v)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="GST">GST Invoice</SelectItem>
+                            <SelectItem value="Non-GST">Non-GST Invoice</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="space-y-3">
-                    {items.map((item, index) => (
-                      // <div key={item.id} className="grid gap-3 rounded-lg border bg-muted/30 p-3 sm:grid-cols-12">
-                      <div
-                        key={item.id}
-                        className={`rounded-lg border p-3 ${!item.productId || item.total <= 0
-                          ? "border-destructive"
-                          : "border-muted"
-                          }`}
-                      >
+                  {/* Items */}
+                  <div className="rounded-xl border bg-card p-5 shadow-card">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3 className="font-display font-semibold">Items</h3>
+                      <Button variant="outline" size="sm" onClick={addItem}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Item
+                      </Button>
+                    </div>
 
-                        <div className="grid gap-3 sm:grid-cols-12">
-                          <div className="sm:col-span-6">
-                            <Label className="text-xs">Product</Label>
-                            {/* <Select value={item.productId ? String(item.productId) : ""} onValueChange={(v) => handleProductSelect(index, v)} disabled={productlaoding}>
+                    <div className="space-y-3">
+                      {items.map((item, index) => (
+                        // <div key={item.id} className="grid gap-3 rounded-lg border bg-muted/30 p-3 sm:grid-cols-12">
+                        <div
+                          key={item.id}
+                          className={`rounded-lg border p-3 ${!item.productId || item.total <= 0
+                            ? "border-destructive"
+                            : "border-muted"
+                            }`}
+                        >
+
+                          <div className="grid gap-3 sm:grid-cols-12">
+                            <div className="sm:col-span-6">
+                              <Label className="text-xs">Product</Label>
+                              {/* <Select value={item.productId ? String(item.productId) : ""} onValueChange={(v) => handleProductSelect(index, v)} disabled={productlaoding}>
                         <SelectTrigger className="h-9">
                           <SelectValue placeholder={productlaoding ? "Loading products..." : "Select Product"} />
                         </SelectTrigger>
@@ -590,77 +601,77 @@ export default function InvoiceBuilder() {
                           ))}
                         </SelectContent>
                       </Select> */}
-                            <ReactSelect<ProductOption, false>
-                              isDisabled={productlaoding}
-                              placeholder={productlaoding ? "Loading products..." : "Select Product"}
-                              options={productOptions}
-                              value={
-                                productOptions.find(
-                                  (opt) => String(opt.value) === String(item.productId)
-                                ) || null
-                              }
-                              onChange={(option: SingleValue<ProductOption>) => {
-                                if (!option) return;
-                                handleProductSelect(index, String(option.value));
-                              }}
-                              isSearchable
-                              filterOption={filterProductOption}
-                              menuPortalTarget={
-                                typeof window !== "undefined" ? document.body : undefined
-                              }
-                              styles={{
-                                control: (base) => ({
-                                  ...base,
-                                  minHeight: 36,
-                                  fontSize: 14,
-                                }),
-                                menuPortal: (base) => ({
-                                  ...base,
-                                  zIndex: 9999,
-                                }),
-                              }}
-                              formatOptionLabel={(option) => (
-                                <div className="flex w-full items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <Package size={14} />
-                                    <span>{option.label}</span>
+                              <ReactSelect<ProductOption, false>
+                                isDisabled={productlaoding}
+                                placeholder={productlaoding ? "Loading products..." : "Select Product"}
+                                options={productOptions}
+                                value={
+                                  productOptions.find(
+                                    (opt) => String(opt.value) === String(item.productId)
+                                  ) || null
+                                }
+                                onChange={(option: SingleValue<ProductOption>) => {
+                                  if (!option) return;
+                                  handleProductSelect(index, String(option.value));
+                                }}
+                                isSearchable
+                                filterOption={filterProductOption}
+                                menuPortalTarget={
+                                  typeof window !== "undefined" ? document.body : undefined
+                                }
+                                styles={{
+                                  control: (base) => ({
+                                    ...base,
+                                    minHeight: 36,
+                                    fontSize: 14,
+                                  }),
+                                  menuPortal: (base) => ({
+                                    ...base,
+                                    zIndex: 9999,
+                                  }),
+                                }}
+                                formatOptionLabel={(option) => (
+                                  <div className="flex w-full items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <Package size={14} />
+                                      <span>{option.label}</span>
+                                    </div>
+                                    {option.sku && (
+                                      <span className="text-xs text-muted-foreground">
+                                        ({option.sku})
+                                      </span>
+                                    )}
                                   </div>
-                                  {option.sku && (
-                                    <span className="text-xs text-muted-foreground">
-                                      ({option.sku})
-                                    </span>
-                                  )}
-                                </div>
-                              )}
-                            />
+                                )}
+                              />
 
 
 
+                            </div>
+                            <div className="sm:col-span-3">
+                              <Label className="text-xs">Quantity</Label>
+                              <Input
+                                type="number"
+                                value={item.qty || ''}
+                                onChange={(e) => updateItem(index, 'qty', Number(e.target.value))}
+                                className="h-9"
+                              />
+                            </div>
+
+                            <div className="sm:col-span-3">
+                              <Label className="text-xs">Rate (₹)</Label>
+                              <Input
+                                type="number"
+                                value={item.rate || ''}
+                                onChange={(e) => updateItem(index, 'rate', Number(e.target.value))}
+                                className="h-9"
+                              />
+                            </div>
                           </div>
-                          <div className="sm:col-span-3">
-                            <Label className="text-xs">Quantity</Label>
-                            <Input
-                              type="number"
-                              value={item.qty || ''}
-                              onChange={(e) => updateItem(index, 'qty', Number(e.target.value))}
-                              className="h-9"
-                            />
-                          </div>
 
-                          <div className="sm:col-span-3">
-                            <Label className="text-xs">Rate (₹)</Label>
-                            <Input
-                              type="number"
-                              value={item.rate || ''}
-                              onChange={(e) => updateItem(index, 'rate', Number(e.target.value))}
-                              className="h-9"
-                            />
-                          </div>
-                        </div>
+                          <div className="grid gap-3 sm:grid-cols-12 items-end">
 
-                        <div className="grid gap-3 sm:grid-cols-12 items-end">
-
-                          {/* <div className="sm:col-span-2">
+                            {/* <div className="sm:col-span-2">
                       <Label className="text-xs">Discount (₹)</Label>
                       <Input
                         type="number"
@@ -671,158 +682,158 @@ export default function InvoiceBuilder() {
                     </div> */}
 
 
-                          {salesMode === "GST" && (
-                            <div className="sm:col-span-3">
-                              <Label className="text-xs">GST %</Label>
+                            {salesMode === "GST" && (
+                              <div className="sm:col-span-3">
+                                <Label className="text-xs">GST %</Label>
 
-                              <Select
-                                value={item.gstRateId ? String(item.gstRateId) : ""}
-                                onValueChange={(v) => {
-                                  const gstId = Number(v);
-                                  const gstObj = gstRates.find(g => g.id === gstId);
+                                <Select
+                                  value={item.gstRateId ? String(item.gstRateId) : ""}
+                                  onValueChange={(v) => {
+                                    const gstId = Number(v);
+                                    const gstObj = gstRates.find(g => g.id === gstId);
 
-                                  updateItem(index, "gstRateId", gstId);
-                                  updateItem(
-                                    index,
-                                    "taxPercent",
-                                    gstObj ? Number(gstObj.Gst_percentae) : 0
-                                  );
-                                }}
-                                disabled={gstLoading}
-                              >
-                                <SelectTrigger className="h-9">
-                                  <SelectValue placeholder={gstLoading ? "Loading GST..." : "GST %"} />
-                                </SelectTrigger>
+                                    updateItem(index, "gstRateId", gstId);
+                                    updateItem(
+                                      index,
+                                      "taxPercent",
+                                      gstObj ? Number(gstObj.Gst_percentae) : 0
+                                    );
+                                  }}
+                                  disabled={gstLoading}
+                                >
+                                  <SelectTrigger className="h-9">
+                                    <SelectValue placeholder={gstLoading ? "Loading GST..." : "GST %"} />
+                                  </SelectTrigger>
 
-                                <SelectContent>
-                                  {gstRates.map(gst => (
-                                    <SelectItem
-                                      key={gst.id}
-                                      value={String(gst.id)}   // ✅ CORRECT
-                                    >
-                                      {gst.Gst_percentae}%
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          )}
+                                  <SelectContent>
+                                    {gstRates.map(gst => (
+                                      <SelectItem
+                                        key={gst.id}
+                                        value={String(gst.id)}   // ✅ CORRECT
+                                      >
+                                        {gst.Gst_percentae}%
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
 
-                          {salesMode === "GST" && (
-                            <div className="sm:col-span-3">
-                              <Label className="text-xs">GST Amount (₹)</Label>
-                              <p className="flex h-9 items-center text-sm font-medium">
-                                ₹{(item.taxAmount || 0).toLocaleString("en-IN")}
+                            {salesMode === "GST" && (
+                              <div className="sm:col-span-3">
+                                <Label className="text-xs">GST Amount (₹)</Label>
+                                <p className="flex h-9 items-center text-sm font-medium">
+                                  ₹{(item.taxAmount || 0).toLocaleString("en-IN")}
+                                </p>
+                              </div>
+                            )}
+
+
+
+
+
+
+                            <div className="sm:col-span-2">
+                              <Label className="text-xs">Total</Label>
+                              <p className="flex h-9 items-center font-display font-semibold">
+                                ₹{(item.total || 0).toLocaleString('en-IN')}
                               </p>
                             </div>
-                          )}
 
+                            <div className="sm:col-span-1 flex items-end">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 text-destructive hover:text-destructive"
+                                onClick={() => removeItem(index)}
+                                disabled={items.length === 1}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
 
-
-
-
-
-                          <div className="sm:col-span-2">
-                            <Label className="text-xs">Total</Label>
-                            <p className="flex h-9 items-center font-display font-semibold">
-                              ₹{(item.total || 0).toLocaleString('en-IN')}
-                            </p>
                           </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
 
-                          <div className="sm:col-span-1 flex items-end">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-9 w-9 text-destructive hover:text-destructive"
-                              onClick={() => removeItem(index)}
-                              disabled={items.length === 1}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                {/* Right Panel - Summary */}
+                <div className="space-y-6">
+                  {/* Client Info */}
+                  {selectedClient && (
+                    <div className="rounded-xl border bg-card p-5 shadow-card animate-scale-in">
+                      <h3 className="mb-3 font-display font-semibold">Client Details</h3>
+                      <div className="space-y-2 text-sm">
+                        {selectedClient.party_name && (
+                          <p className="font-medium">{selectedClient.party_name}</p>
+                        )}
+                        {selectedClient.Mobile_no && (
+                          <p className="font-medium">Mobile Number:{selectedClient.Mobile_no}</p>
+                        )}
+                        {selectedClient.email && (
+                          <p className="font-medium">Email:{selectedClient.email}</p>
+                        )}
+                        {selectedClient.gstin && (
+                          <p className="font-medium">GSTIN: {selectedClient.gstin}</p>
+                        )}
+                        {selectedClient.billing_address && (
+                          <p className="font-medium">Billing Address: {selectedClient.billing_address}</p>
+                        )}
+                        {selectedClient?.state_of_supply?.state_name && (
+                          <p className="font-medium">State of Supply: ({selectedClient?.state_of_supply?.state_code})  {selectedClient?.state_of_supply?.state_name}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
+                  {/* Totals */}
+                  <div className="rounded-xl border bg-card p-5 shadow-card">
+                    <h3 className="mb-4 font-display font-semibold">Invoice Summary</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Subtotal</span>
+                        <span>₹{totals.subtotal.toLocaleString('en-IN')}</span>
+                      </div>
+                      {salesMode === 'GST' && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">GST</span>
+                          <span>₹{totals.totalTax.toLocaleString('en-IN')}</span>
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={applyRoundOff}
+                              onChange={(e) => setApplyRoundOff(e.target.checked)}
+                              className="h-4 w-4 accent-primary"
+                            />
+                            <span className="text-muted-foreground">Round Off</span>
+                          </label>
+
+                          <span className="text-sm font-medium">
+                            ₹{totals.roundOff.toLocaleString("en-IN")}
+                          </span>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Panel - Summary */}
-              <div className="space-y-6">
-                {/* Client Info */}
-                {selectedClient && (
-                  <div className="rounded-xl border bg-card p-5 shadow-card animate-scale-in">
-                    <h3 className="mb-3 font-display font-semibold">Client Details</h3>
-                    <div className="space-y-2 text-sm">
-                      {selectedClient.party_name && (
-                        <p className="font-medium">{selectedClient.party_name}</p>
-                      )}
-                      {selectedClient.Mobile_no && (
-                        <p className="font-medium">Mobile Number:{selectedClient.Mobile_no}</p>
-                      )}
-                      {selectedClient.email && (
-                        <p className="font-medium">Email:{selectedClient.email}</p>
-                      )}
-                      {selectedClient.gstin && (
-                        <p className="font-medium">GSTIN: {selectedClient.gstin}</p>
-                      )}
-                      {selectedClient.billing_address && (
-                        <p className="font-medium">Billing Address: {selectedClient.billing_address}</p>
-                      )}
-                      {selectedClient?.state_of_supply?.state_name && (
-                        <p className="font-medium">State of Supply: ({selectedClient?.state_of_supply?.state_code})  {selectedClient?.state_of_supply?.state_name}</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Totals */}
-                <div className="rounded-xl border bg-card p-5 shadow-card">
-                  <h3 className="mb-4 font-display font-semibold">Invoice Summary</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Subtotal</span>
-                      <span>₹{totals.subtotal.toLocaleString('en-IN')}</span>
-                    </div>
-                    {salesMode === 'GST' && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">GST</span>
-                        <span>₹{totals.totalTax.toLocaleString('en-IN')}</span>
-                      </div>
-                    )}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={applyRoundOff}
-                            onChange={(e) => setApplyRoundOff(e.target.checked)}
-                            className="h-4 w-4 accent-primary"
-                          />
-                          <span className="text-muted-foreground">Round Off</span>
-                        </label>
-
-                        <span className="text-sm font-medium">
-                          ₹{totals.roundOff.toLocaleString("en-IN")}
-                        </span>
-                      </div>
-                    </div>
 
 
-                    <div className="border-t pt-3">
-                      <div className="flex justify-between">
-                        <span className="font-display font-semibold">Grand Total</span>
-                        <span className="font-display text-xl font-bold text-primary">
-                          ₹{totals.grandTotal.toLocaleString('en-IN')}
-                        </span>
+                      <div className="border-t pt-3">
+                        <div className="flex justify-between">
+                          <span className="font-display font-semibold">Grand Total</span>
+                          <span className="font-display text-xl font-bold text-primary">
+                            ₹{totals.grandTotal.toLocaleString('en-IN')}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Actions */}
-                {/* <div className="space-y-2">
+                  {/* Actions */}
+                  {/* <div className="space-y-2">
             <Button className="w-full gap-2" variant="accent" onClick={() => handleSave(false)}>
               <FileDown className="h-4 w-4" />
               Download PDF
@@ -833,32 +844,41 @@ export default function InvoiceBuilder() {
               Send via WhatsApp
             </Button>
           </div> */}
-                <div className='space-y-2'>
-                  <Button
-                    variant="accent"
-                    onClick={() => handleSave(false)}
-                    disabled={mutation.isPending}
-                  >
-                    {mutation.isPending ? (
-                      <>
-                        <Button_loader /> Saving & Print...
-                      </>
-                    ) : (
-                      <>
-                        <Printer className="mr-2 h-4 w-4" />
-                        Save & Print
-                      </>
-                    )}
-                  </Button>
+                  <div className='space-y-2'>
+                    <Button
+                      variant="accent"
+                      onClick={() => handleSave(false)}
+                      disabled={mutation.isPending}
+                    >
+                      {mutation.isPending ? (
+                        <>
+                          <Button_loader /> Saving & Print...
+                        </>
+                      ) : (
+                        <>
+                          <Printer className="mr-2 h-4 w-4" />
+                          Save & Print
+                        </>
+                      )}
+                    </Button>
+
+                  </div>
 
                 </div>
-
               </div>
-            </div>
-          </>
-        )
-      }
+            </>
+          )
+        }
 
-    </div>
+
+      </div>
+
+      <ClientFormDialog
+        open={clientDialogOpen}
+        onOpenChange={setClientDialogOpen}
+        mode={clientDialogMode}
+      />
+
+    </>
   );
 }

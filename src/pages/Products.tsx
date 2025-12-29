@@ -228,9 +228,6 @@ export default function Products() {
       </div>
   ) : (
     <>
-    
-    
-  
         {
         !isLoading && 
         filteredProducts.map((product) => {
