@@ -39,6 +39,7 @@ import { getGrandTotal } from '../Helper/GrandTotal';
 import { OrderStatus } from '../Helper/orderstatus';
 import { formatDate } from '../Helper/formatDate';
 import { getVisibleTaxRows } from '../Helper/GetVisibleTaxRows';
+import Button_loader from '../Helper/Button_loader';
 
 interface InvoiceDetailDialogProps {
   open: boolean;
@@ -60,6 +61,8 @@ const statusStyles = {
 };
 
 export function InvoiceDetailDialog({ open, onOpenChange, invoice }) {
+  const [downloading, setDownloading] = useState(false);
+
   // const { invoice, clients } = useApp();
   const logoUrl = invoice?.company?.logo_1
     ? `${import.meta.env.VITE_API_BASE_URL}${invoice?.company?.logo_1}`
@@ -87,7 +90,7 @@ export function InvoiceDetailDialog({ open, onOpenChange, invoice }) {
 
 
 
-
+console.log("invoice",invoice)
   const printRef = useRef<HTMLDivElement>(null);
   const [showWhatsApp, setShowWhatsApp] = useState(false);
 
@@ -443,340 +446,338 @@ export function InvoiceDetailDialog({ open, onOpenChange, invoice }) {
 //     printWindow.print();
 //   };
 
-const getInvoiceHTML = () =>`
-<!DOCTYPE html>
-<html>
-<head>
-  <title> ${invoice.billing_name} Invoice</title>
-  <link rel="icon" type="${logoUrl}" href="${logoUrl}" />
+  const getInvoiceHTML = () =>`
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <title> ${invoice.billing_name} Invoice</title>
+    <link rel="icon" type="${logoUrl}" href="${logoUrl}" />
 
-  <style>
-    @page {
-      size: A4;
-      margin: 20mm;
-    }
+    <style>
+      @page {
+        size: A4;
+        margin: 20mm;
+      }
 
-    * {
-      box-sizing: border-box;
-    }
+      * {
+        box-sizing: border-box;
+      }
 
-    body {
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 12px;
-      color: #000;
-    }
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 12px;
+        color: #000;
+      }
 
-    /* HEADER */
-    .invoice-header {
-      display: flex;
-      justify-content: space-between;
-      border-bottom: 2px solid #000;
-      padding-bottom: 10px;
-      margin-bottom: 20px;
-    }
+      /* HEADER */
+      .invoice-header {
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 2px solid #000;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+      }
 
-    .company-info h1 {
-      font-size: 18px;
-      margin-bottom: 4px;
-    }
+      .company-info h1 {
+        font-size: 18px;
+        margin-bottom: 4px;
+      }
 
-    .company-info p {
-      font-size: 11px;
-      line-height: 1.5;
-    }
+      .company-info p {
+        font-size: 11px;
+        line-height: 1.5;
+      }
 
-    .invoice-meta {
-      text-align: right;
-    }
+      .invoice-meta {
+        text-align: right;
+      }
 
-    .invoice-meta h2 {
-      font-size: 20px;
-      font-weight: bold;
-      margin-bottom: 6px;
-      letter-spacing: 1px;
-    }
+      .invoice-meta h2 {
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 6px;
+        letter-spacing: 1px;
+      }
 
-    /* PARTIES */
-    .parties {
-      margin-bottom: 15px;
-    }
+      /* PARTIES */
+      .parties {
+        margin-bottom: 15px;
+      }
 
-    .party h3 {
-      font-size: 11px;
-      text-transform: uppercase;
-      margin-bottom: 4px;
-    }
+      .party h3 {
+        font-size: 11px;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
 
-    .party p {
-      font-size: 12px;
-      line-height: 1.5;
-    }
+      .party p {
+        font-size: 12px;
+        line-height: 1.5;
+      }
 
-    /* GST TABLE */
-    .gst-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 15px;
-      font-size: 12px;
-    }
+      /* GST TABLE */
+      .gst-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 15px;
+        font-size: 12px;
+      }
 
-    .gst-table th,
-    .gst-table td {
-      border: 1px solid #000;
-      padding: 6px;
-    }
+      .gst-table th,
+      .gst-table td {
+        border: 1px solid #000;
+        padding: 6px;
+      }
 
-    .gst-table thead th {
-      background: #f0f0f0;
-      text-align: center;
-      font-weight: bold;
-    }
+      .gst-table thead th {
+        background: #f0f0f0;
+        text-align: center;
+        font-weight: bold;
+      }
 
-    .text-right {
-      text-align: right;
-    }
+      .text-right {
+        text-align: right;
+      }
 
-    .text-center {
-      text-align: center;
-    }
+      .text-center {
+        text-align: center;
+      }
 
-    .gst-table tr {
-      page-break-inside: avoid;
-    }
+      .gst-table tr {
+        page-break-inside: avoid;
+      }
 
-    /* TOTALS */
-    .totals {
-      width: 320px;
-      margin-left: auto;
-      border: 1px solid #000;
-      font-size: 12px;
-    }
+      /* TOTALS */
+      .totals {
+        width: 320px;
+        margin-left: auto;
+        border: 1px solid #000;
+        font-size: 12px;
+      }
 
-    .totals .row {
-      display: flex;
-      justify-content: space-between;
-      padding: 6px 10px;
-      border-bottom: 1px solid #000;
-    }
+      .totals .row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 10px;
+        border-bottom: 1px solid #000;
+      }
 
-    .totals .grand-total {
-      font-weight: bold;
-      background: #f0f0f0;
-      font-size: 14px;
-    }
+      .totals .grand-total {
+        font-weight: bold;
+        background: #f0f0f0;
+        font-size: 14px;
+      }
 
-    /* FOOTER */
-    .footer {
-      margin-top: 25px;
-      font-size: 11px;
-    }
+      /* FOOTER */
+      .footer {
+        margin-top: 25px;
+        font-size: 11px;
+      }
 
-    .footer-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-    }
+      .footer-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
 
-    .footer-left {
-      width: 65%;
-    }
+      .footer-left {
+        width: 65%;
+      }
 
-    .footer-right {
-      width: 30%;
-      text-align: right;
-    }
+      .footer-right {
+        width: 30%;
+        text-align: right;
+      }
 
-    .signature-box img {
-      max-height: 60px;
-      object-fit: contain;
-    }
+      .signature-box img {
+        max-height: 60px;
+        object-fit: contain;
+      }
 
-    .signature-label {
-      font-size: 11px;
-      margin-top: 4px;
-    }
+      .signature-label {
+        font-size: 11px;
+        margin-top: 4px;
+      }
 
-    .thank-you {
-      text-align: center;
-      margin-top: 15px;
-      font-size: 11px;
-    }
+      .thank-you {
+        text-align: center;
+        margin-top: 15px;
+        font-size: 11px;
+      }
 
-    .terms-title {
-  font-weight: bold;
-  margin-bottom: 4px;
-  text-transform: uppercase;
-}
+      .terms-title {
+    font-weight: bold;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
 
-.terms-text {
-  font-size: 11px;
-  line-height: 1.6;
-}
+  .terms-text {
+    font-size: 11px;
+    line-height: 1.6;
+  }
 
-.terms-text ul {
-  padding-left: 16px;
-  margin: 4px 0 0 0;
-}
+  .terms-text ul {
+    padding-left: 16px;
+    margin: 4px 0 0 0;
+  }
 
-.terms-text li {
-  margin-bottom: 2px;
-}
+  .terms-text li {
+    margin-bottom: 2px;
+  }
 
-.parties {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 15px;
-}
+  .parties {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+  }
 
-.party {
-  width: 48%;
-}
+  .party {
+    width: 48%;
+  }
 
-.invoice-details {
-  text-align: right;
-}
+  .invoice-details {
+    text-align: right;
+  }
 
 
-  </style>
-</head>
+    </style>
+  </head>
 
-<body>
+  <body>
 
-<!-- HEADER -->
-<div class="invoice-header">
-  <div class="company-info">
-    <h1>${invoice?.company?.company_name}</h1>
-    <p>
-       ${invoice?.company?.address}<br/>
-      GSTIN: ${invoice?.company?.gstin}<br/>
-      State: ${invoice?.company?.state?.state_name}
-    </p>
+  <!-- HEADER -->
+  <div class="invoice-header">
+    <div class="company-info">
+      <h1>${invoice?.company?.company_name}</h1>
+      <p>
+        ${invoice?.company?.address}<br/>
+        GSTIN: ${invoice?.company?.gstin}<br/>
+        State: ${invoice?.company?.state?.state_name}
+      </p>
+    </div>
+
+    <div class="invoice-meta">
+    
+    </div>
   </div>
 
-  <div class="invoice-meta">
-   
+  <!-- BILL TO -->
+  <div class="parties">
+    <div class="party">
+      <h3>Bill To</h3>
+      <p>
+        ${invoice?.billing_name ? `
+          <strong>${invoice.billing_name}</strong><br/>
+        ` : ''}
+
+        ${invoice?.customer?.Mobile_no ? `
+          Mobile Number: ${invoice.customer.Mobile_no}<br/>
+        ` : ''}
+
+        ${invoice?.customer?.email ? `
+          Email: ${invoice.customer.email}<br/>
+        ` : ''}
+
+        ${invoice?.customer?.gstin ? `
+          GSTIN: ${invoice.customer.gstin}<br/>
+        ` : ''}
+
+      ${invoice?.customer?.billing_address ? `
+          Billing Address: ${invoice.customer.billing_address}<br/>
+        ` : ''}
+  ${invoice?.customer?.state_of_supply?.state_name ? `
+          State: (${invoice.customer.state_of_supply.state_code})
+          ${invoice.customer.state_of_supply.state_name}
+        ` : ''}      
+      </p>
+    </div>
+    <div class="party invoice-details">
+      <h3>Invoice Details</h3>
+      <p>
+        <strong>Invoice No:</strong> ${invoice.invoice_no}<br/>
+        <strong>Invoice Date:</strong> ${formatDate(invoice.date)}<br/>
+        ${invoice?.dueDate ? `<strong>Due Date:</strong> ${invoice?.dueDate}` : ''}
+      </p>
+    </div>
   </div>
-</div>
 
-<!-- BILL TO -->
-<div class="parties">
-  <div class="party">
-    <h3>Bill To</h3>
-    <p>
-       ${invoice?.billing_name ? `
-        <strong>${invoice.billing_name}</strong><br/>
-      ` : ''}
-
-       ${invoice?.customer?.Mobile_no ? `
-        Mobile Number: ${invoice.customer.Mobile_no}<br/>
-      ` : ''}
-
-       ${invoice?.customer?.email ? `
-        Email: ${invoice.customer.email}<br/>
-      ` : ''}
-
-       ${invoice?.customer?.gstin ? `
-        GSTIN: ${invoice.customer.gstin}<br/>
-      ` : ''}
-
-     ${invoice?.customer?.billing_address ? `
-        Billing Address: ${invoice.customer.billing_address}<br/>
-      ` : ''}
- ${invoice?.customer?.state_of_supply?.state_name ? `
-        State: (${invoice.customer.state_of_supply.state_code})
-        ${invoice.customer.state_of_supply.state_name}
-      ` : ''}      
-    </p>
-  </div>
-   <div class="party invoice-details">
-    <h3>Invoice Details</h3>
-    <p>
-      <strong>Invoice No:</strong> ${invoice.invoice_no}<br/>
-      <strong>Invoice Date:</strong> ${formatDate(invoice.date)}<br/>
-      ${invoice?.dueDate ? `<strong>Due Date:</strong> ${invoice?.dueDate}` : ''}
-    </p>
-  </div>
-</div>
-
-<!-- GST TABLE -->
-<table class="gst-table">
-  <thead>
-    <tr>
-      <th>#</th>
-      <th>Description of Goods</th>
-      <th>HSN/SAC</th>
-      <th>Qty</th>
-      <th>Rate (₹)</th>
-      <th>Discount (₹)</th>
-      <th>GST %</th>
-      <th>Amount (₹)</th>
-    </tr>
-  </thead>
-  <tbody>
-    ${invoice?.Invoice_details.map((item, idx) => `
+  <!-- GST TABLE -->
+  <table class="gst-table">
+    <thead>
       <tr>
-        <td class="text-center">${idx + 1}</td>
-        <td>${item?.product?.product_name}</td>
-        <td class="text-center">${item?.product?.hsn_sac || '-'}</td>
-        <td class="text-right">${item.qty}</td>
-        <td class="text-right">${amountInWords(item.Rate)}</td>
-        <td class="text-right">${amountInWords(item.discount_amt)}</td>
-        <td class="text-right">${item.gst_percentage}%</td>
-        <td class="text-right">${amountInWords(item.total_amt)}</td>
+        <th>#</th>
+        <th>Description of Goods</th>
+        <th>HSN/SAC</th>
+        <th>Qty</th>
+        <th>Rate (₹)</th>
+        <th>GST %</th>
+        <th>Amount (₹)</th>
       </tr>
-    `).join('')}
-  </tbody>
-</table>
+    </thead>
+    <tbody>
+      ${invoice?.Invoice_details.map((item, idx) => `
+        <tr>
+          <td class="text-center">${idx + 1}</td>
+          <td>${item?.product?.product_name}</td>
+          <td class="text-center">${item?.product?.hsn_sac || '-'}</td>
+          <td class="text-right">${item.qty}</td>
+          <td class="text-right">${amountInWords(item.Rate)}</td>
+          <td class="text-right">${item.gst_percentage}%</td>
+          <td class="text-right">${amountInWords(item.total_amt)}</td>
+        </tr>
+      `).join('')}
+    </tbody>
+  </table>
 
-<!-- TOTALS -->
-<div class="totals">
-  <div class="row"><span>Subtotal</span><span>${amountInWords(invoice?.total_amt)}</span></div>
-  ${taxHtml}
-  <div class="row"><span>Round Off</span><span>${invoice?.round_amt}</span></div>
-  <div class="row grand-total"><span>Grand Total</span><span>${amountInWords(invoice?.net_amt)}</span></div>
-</div>
-
-<!-- DECLARATION -->
-<p style="margin-top:15px; font-size:11px;">
-  <strong>Declaration:</strong><br/>
-  We declare that this invoice shows the actual price of the goods described
-  and that all particulars are true and correct.
-</p>
-
-<!-- FOOTER -->
-<div class="footer">
-  <div class="footer-row">
-    <div class="footer-left">
-  ${invoice?.company?.invoice_footer ? `
-    <div class="terms-title">Terms & Conditions</div>
-    <div class="terms-text">
-      <ul>
-        ${invoice.company.invoice_footer
-          .split('\n')
-          .map(term => `<li>${term}</li>`)
-          .join('')}
-      </ul>
-    </div>
-  ` : ''}
-</div>
-
-
-    <div class="footer-right">
-      ${signatureUrl ? `
-        <div class="signature-box">
-          <img src="${signatureUrl}" />
-          <div class="signature-label">Authorized Signature</div>
-        </div>
-      ` : ''}
-    </div>
+  <!-- TOTALS -->
+  <div class="totals">
+    <div class="row"><span>Subtotal</span><span>${amountInWords(invoice?.total_amt)}</span></div>
+    ${taxHtml}
+    <div class="row"><span>Round Off</span><span>${invoice?.round_amt}</span></div>
+    <div class="row grand-total"><span>Grand Total</span><span>${amountInWords(invoice?.net_amt)}</span></div>
   </div>
 
-  <p class="thank-you">Thank you for your business!</p>
-</div>
+  <!-- DECLARATION -->
+  <p style="margin-top:15px; font-size:11px;">
+    <strong>Declaration:</strong><br/>
+    We declare that this invoice shows the actual price of the goods described
+    and that all particulars are true and correct.
+  </p>
 
-</body>
-</html>
-`;
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-row">
+      <div class="footer-left">
+    ${invoice?.company?.invoice_footer ? `
+      <div class="terms-title">Terms & Conditions</div>
+      <div class="terms-text">
+        <ul>
+          ${invoice.company.invoice_footer
+            .split('\n')
+            .map(term => `<li>${term}</li>`)
+            .join('')}
+        </ul>
+      </div>
+    ` : ''}
+  </div>
+
+
+      <div class="footer-right">
+        ${signatureUrl ? `
+          <div class="signature-box">
+            <img src="${signatureUrl}" />
+            <div class="signature-label">Authorized Signature</div>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+
+    <p class="thank-you">Thank you for your business!</p>
+  </div>
+
+  </body>
+  </html>
+  `;
 
 const handlePrint = () => {
   const win = window.open("", "_blank");
@@ -788,21 +789,52 @@ const handlePrint = () => {
   win.print();
 };
 
+const handleDownloadPDF = async () => {
+  try {
+    const invoiceId = invoice?.id;              // or invoice.invoice_id
+    const companyId = invoice?.company?.id;     // current company id
 
-  // const handleDownloadPDF = () => {
-  //   handlePrint();
-  // };
+    if (!invoiceId || !companyId) {
+      alert("Invoice or Company ID missing");
+      return;
+    }
+     setDownloading(true);
+    const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+    const url = `${BASE_URL}/invoicee/${invoiceId}/download/?company_id=${companyId}`;
 
-const handleDownloadPDF = () => {
-  const win = window.open("", "_blank");
-  if (!win) return;
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Accept": "application/pdf",
+        // If auth required, uncomment below
+        // "Authorization": `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
 
-  win.document.write(getInvoiceHTML());
-  win.document.close();
+    if (!response.ok) {
+      throw new Error("Failed to download PDF");
+    }
 
-  win.focus();
-  win.print(); // user selects "Save as PDF"
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = `Invoice-${invoice.invoice_no}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+
+    link.remove();
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    console.error("PDF download error:", error);
+    alert("Unable to download invoice PDF");
+  }
+   finally {
+    setDownloading(false);
+  }
 };
+
 
 
 
@@ -1070,10 +1102,28 @@ const handleDownloadPDF = () => {
               <Printer className="h-4 w-4" />
               Print
             </Button>
-            <Button onClick={handleDownloadPDF} variant="outline" className="gap-2">
+            {/* <Button onClick={handleDownloadPDF} variant="outline" className="gap-2">
               <Download className="h-4 w-4" />
               Download PDF
-            </Button>
+            </Button> */}
+            <Button
+  onClick={handleDownloadPDF}
+  variant="outline"
+  className="gap-2"
+  disabled={downloading}
+>
+  {downloading ? (
+    <>
+     <Button_loader/>Downloading...
+    </>
+  ) : (
+    <>
+      <Download className="h-4 w-4" />
+      Download PDF
+    </>
+  )}
+</Button>
+
             
             <Button onClick={() => setShowWhatsApp(true)} variant="outline" className="gap-2 text-green-600 hover:text-green-700">
               <SendIcon className="h-4 w-4" />
